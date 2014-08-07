@@ -1,3 +1,8 @@
+
+SEE motd.ino
+
+
+
 Wiring between the Spark and 16x32 display is as follows:
 
 16x32 Pin		Spark Pin
