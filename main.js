@@ -141,7 +141,7 @@ var scheduleNextUpdate = function () {
     //TODO: sleep until next update time.
 
     //sleep for two minutes
-    setTimeout(updateBusInfo, 120 * 1000);
+    setTimeout(updateBusInfo, 60 * 1000);
 };
 
 var updateBusInfo = function () {
