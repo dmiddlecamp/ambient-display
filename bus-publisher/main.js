@@ -1,4 +1,20 @@
-var settings = require("./settings.js");
+//var settings = require("./settings.js");
+var moment = require('moment');
+var request = require('request');
+var ApiClient = require("./ApiClient.js");
+
+var settings = settings = {
+    apiUrl: "https://api.spark.io",
+    access_token: "YOUR_ACCESS_TOKEN",
+
+    stopUrl: "http://svc.metrotransit.org/NexTrip/20031?format=json",
+
+    //how many minutes of stops do we want to show
+    cutoff: 60,
+
+    dailyStartTime: "06:00",
+    dailyStopTime: "22:30"
+};
 
 
 // example values:
@@ -60,11 +76,6 @@ var sample = { Departures:
        BlockNumber: 1032,
        SortOrder: 0,
        Gate: '' } ] };
-
-var moment = require('moment');
-var request = require('request');
-var ApiClient = require("./ApiClient.js");
-
 
 
 
@@ -156,7 +167,7 @@ var updateBusInfo = function () {
 
 
 var api = new ApiClient(settings.apiUrl, settings.access_token);
-//api.publishEvent("rgb_motd", "Message Of the Day!");
+api.publishEvent("rgb_app", "Starting up");
 
 updateBusInfo();
 
