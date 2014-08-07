@@ -16,9 +16,8 @@ var settings = {
 
 try {
   if (fs.existsSync('./settings.json')) {
-    var some_json_string = fs.readFileSync('./settings.json');
-    var the_json = JSON.parse(some_json_string);
-    settings = extend(settings, the_json);
+    var data = JSON.parse(fs.readFileSync('./settings.json'));
+    settings = extend(settings, data);
   }
 } catch(ex) {
   console.error('tried to check and parse settings.json, but couldnt parse do it ', ex);

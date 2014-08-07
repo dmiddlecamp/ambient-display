@@ -1,4 +1,3 @@
-var extend = require('xtend');
 var settings = require("./settings.js");
 
 
