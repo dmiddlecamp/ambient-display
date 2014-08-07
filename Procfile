@@ -1,1 +1,1 @@
-worker: cd bus-publisher; node main.js
+worker: node main.js
