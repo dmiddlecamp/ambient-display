@@ -4,3 +4,5 @@ plasma_16x32.ino
 motd.ino
 #motd32.ino
 .gitignore
+test.js
+motd32.ino

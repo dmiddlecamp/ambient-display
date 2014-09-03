@@ -531,7 +531,8 @@ uint8_t Adafruit_GFX::getRotation(void) {
 }
 
 void Adafruit_GFX::setRotation(uint8_t x) {
-  rotation = (x & 3);
+ // rotation = (x & 3);
+  rotation = x;
   switch(rotation) {
    case 0:
    case 2:
@@ -544,17 +545,17 @@ void Adafruit_GFX::setRotation(uint8_t x) {
     _height = WIDTH;
     break;
 
-//    case 5:
-//    //
-//    //  aaabbb
-//    //
-//    //-> aaa
-//    //-> bbb
-//    //
-//    //
-//    _width = 0.5 * WIDTH;
-//    _height = 2 * HEIGHT;
-//    break;
+    case 5:
+    //
+    //  aaabbb
+    //
+    //-> aaa
+    //-> bbb
+    //
+    //
+    _width = 0.5 * WIDTH;
+    _height = 2 * HEIGHT;
+    break;
   }
 }
 

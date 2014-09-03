@@ -36,6 +36,7 @@ BSD license, all text above must be included in any redistribution.
 #include "RGBmatrixPanel.h"
 #include "gamma.h"
 #include "SparkIntervalTimer.h"
+#include "application.h"
 
 // A full PORT register is required for the data lines, though only the
 // top 6 output bits are used.  For performance reasons, the port # cannot
@@ -242,7 +243,7 @@ void RGBmatrixPanel::begin(void) {
 // Original RGBmatrixPanel library used 3/3/3 color.  Later version used
 // 4/4/4.  Then Adafruit_GFX (core library used across all Adafruit
 // display devices now) standardized on 5/6/5.  The matrix still operates
-// internally on 4/4/4 color, but all the graphics functions are written
+// internally on 4/4/4 c, but all the graphics functions are written
 // to expect 5/6/5...the matrix lib will truncate the color components as
 // needed when drawing.  These next functions are mostly here for the
 // benefit of older code using one of the original color formats.
@@ -330,7 +331,10 @@ uint16_t RGBmatrixPanel::ColorHSV(
 void RGBmatrixPanel::drawPixel(int16_t x, int16_t y, uint16_t c) {
   uint8_t r, g, b, bit, limit, *ptr;
 
-  if((x < 0) || (x >= _width) || (y < 0) || (y >= _height)) return;
+  //Serial.println("was x " + String(x) + " y " + String(y));
+  if((x < 0) || (x >= _width) || (y < 0) || (y >= _height)) {
+    return;
+  }
 
   switch(rotation) {
    case 1:
@@ -345,7 +349,87 @@ void RGBmatrixPanel::drawPixel(int16_t x, int16_t y, uint16_t c) {
     swap(x, y);
     y = HEIGHT - 1 - y;
     break;
+
+    case 5:
+    //
+    //  aaabbb
+    //
+    //-> aaa
+    //-> bbb
+    //
+    //
+
+    //actual layout
+
+    //x -> (-x-0)(0-x)
+    //y -> (0-y)(0-y)
+    //
+
+
+    //logical coordinates
+    //x coordinates
+    //0-wid
+    //wid-2*wid
+
+    //y coordinates
+    // 0-y
+    // y-2y
+
+//var trans_x = function(x, y) {
+//    if (y < 16) {
+//        return x - width
+//    }
+//    else {
+//        return x;
+//    }
+//};
+//var trans_y = function(x, y) {
+//    if (y >= 16) {
+//        return y - 16;
+//    }
+//    return y;
+//};
+
+    //Serial.println("was x " + String(x) + " y " + String(y));
+
+    x = 32 - x;
+    y = 32 - y;
+
+    if (y < 16) {
+        x = (-1 * x);
+        y = 16 - y;
+    }
+    else {
+        y = y - 16;
+        x = x - 1;
+    }
+
+    //Serial.println("now x " + String(x) + " y " + String(y));
+
+
+//    if (y <= 16) {
+//        //was meant for top region,
+//        //pull it over to the left
+//       //x = x - WIDTH;
+//
+//       //0...32 -> -32..0
+//       x = 1 - (x - WIDTH);
+//
+//       //invert it
+//       //x = WIDTH  - 1 - x;
+//
+//
+//        //flip vertically
+//        y = 16 - y;
+//    }
+//    else {
+//        y = y - HEIGHT;
+//    }
+
+    break;
   }
+
+
 
   // Adafruit_GFX uses 16-bit color in 5/6/5 format, while matrix needs
   // 4/4/4.  Pluck out relevant bits while separating into R,G,B:
@@ -357,7 +441,18 @@ void RGBmatrixPanel::drawPixel(int16_t x, int16_t y, uint16_t c) {
   bit   = 2;
   limit = 1 << nPlanes;
 
-  if(y < nRows) {
+
+
+  if (y < nRows) {
+
+    //DEBUG -- still need these!
+    unsigned int buffsize = 32 * nRows * 3 * nPanels;
+    unsigned int idx = y * WIDTH * (nPlanes - 1) + x;
+    if ((idx < 0) || (idx > buffsize)) {
+        return;
+    }
+    //DEBUG
+
     // Data for the upper half of the display is stored in the lower
     // bits of each byte.
     ptr = &matrixbuff[backindex][y * WIDTH * (nPlanes - 1) + x]; // Base addr
@@ -391,10 +486,22 @@ void RGBmatrixPanel::drawPixel(int16_t x, int16_t y, uint16_t c) {
       if(b & bit) *ptr |= 0B00010000;  // Plane N B: bit 4
       ptr  += WIDTH;                  // Advance to next bit plane
     }
-  } else {
+  }
+  else {
+
+    //DEBUG
+    unsigned int buffsize = 32 * nRows * 3 * nPanels;
+    unsigned int idx = (y - nRows) * WIDTH * (nPlanes - 1) + x;
+    if ((idx < 0) || (idx > buffsize)) {
+        return;
+    }
+    //DEBUG
+
     // Data for the lower half of the display is stored in the upper
     // bits, except for the plane 0 stuff, using 2 least bits.
     ptr = &matrixbuff[backindex][(y - nRows) * WIDTH * (nPlanes - 1) + x];
+
+
 
     *ptr &= ~0B00000011;               // Plane 0 G,B mask out in one op
 //    if(r & 1)  ptr[32] |=  0B00000010; // Plane 0 R: 32 bytes ahead, bit 1
