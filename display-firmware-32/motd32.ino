@@ -4,6 +4,8 @@
 #include "RGBmatrixPanel.h" // Hardware-specific library
 #include "math.h"
 
+SYSTEM_MODE(MANUAL);
+
 //#include "spark_disable_wlan.h"
 //#include "spark_disable_cloud.h"
 
@@ -100,6 +102,7 @@ void setup() {
     Serial.begin(9600);
 
     matrix.begin();
+    matrix.setRotation(5);
     matrix.fillScreen(matrix.Color333(0, 0, 0));
     matrix.setCursor(0, 0);   // start at top left, with one pixel of spacing
 
@@ -108,9 +111,9 @@ void setup() {
 
     resetMessage();
 
-        Spark.subscribe("rgb_motd", motdHandler, MY_DEVICES);
-        Spark.subscribe("rgb_bus_times", motdHandler, MY_DEVICES);
-        Spark.subscribe("Input", motdHandler, MY_DEVICES);
+//        Spark.subscribe("rgb_motd", motdHandler, MY_DEVICES);
+//        Spark.subscribe("rgb_bus_times", motdHandler, MY_DEVICES);
+//        Spark.subscribe("Input", motdHandler, MY_DEVICES);
 
 //    WiFi.on();
 //    Spark.connect();

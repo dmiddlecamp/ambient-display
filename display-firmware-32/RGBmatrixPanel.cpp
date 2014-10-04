@@ -329,6 +329,7 @@ uint16_t RGBmatrixPanel::ColorHSV(
 }
 
 void RGBmatrixPanel::drawPixel(int16_t x, int16_t y, uint16_t c) {
+  int16_t ox = x, oy = y;
   uint8_t r, g, b, bit, limit, *ptr;
 
   //Serial.println("was x " + String(x) + " y " + String(y));
@@ -351,84 +352,43 @@ void RGBmatrixPanel::drawPixel(int16_t x, int16_t y, uint16_t c) {
     break;
 
     case 5:
-    //
-    //  aaabbb
-    //
-    //-> aaa
-    //-> bbb
-    //
-    //
 
-    //actual layout
+    //top panel LOGICAL:
+    // 0,0
+    // .
+    // .
+    // .
+    // . . . . . . . 16, 32
 
-    //x -> (-x-0)(0-x)
-    //y -> (0-y)(0-y)
-    //
+    //top panel PHYSICAL
+    // 32,16
+    // .
+    // .
+    // .
+    // . . . . . . . 0, 0
+
+    //bottom panel ???
 
 
-    //logical coordinates
-    //x coordinates
-    //0-wid
-    //wid-2*wid
 
-    //y coordinates
-    // 0-y
-    // y-2y
 
-//var trans_x = function(x, y) {
-//    if (y < 16) {
-//        return x - width
-//    }
-//    else {
-//        return x;
-//    }
-//};
-//var trans_y = function(x, y) {
-//    if (y >= 16) {
-//        return y - 16;
-//    }
-//    return y;
-//};
+    //flip top logical to physical:
 
-    //Serial.println("was x " + String(x) + " y " + String(y));
-
-    x = 32 - x;
-    y = 32 - y;
 
     if (y < 16) {
-        x = (-1 * x);
-        y = 16 - y;
+        //wants top panel
+        x = 31 - x;
+        y = 15 - y;
     }
     else {
+        // wants bottom panel
         y = y - 16;
-        x = x - 1;
+        x = -1 * (32 - x);
     }
 
-    //Serial.println("now x " + String(x) + " y " + String(y));
-
-
-//    if (y <= 16) {
-//        //was meant for top region,
-//        //pull it over to the left
-//       //x = x - WIDTH;
-//
-//       //0...32 -> -32..0
-//       x = 1 - (x - WIDTH);
-//
-//       //invert it
-//       //x = WIDTH  - 1 - x;
-//
-//
-//        //flip vertically
-//        y = 16 - y;
-//    }
-//    else {
-//        y = y - HEIGHT;
-//    }
 
     break;
   }
-
 
 
   // Adafruit_GFX uses 16-bit color in 5/6/5 format, while matrix needs
@@ -441,10 +401,7 @@ void RGBmatrixPanel::drawPixel(int16_t x, int16_t y, uint16_t c) {
   bit   = 2;
   limit = 1 << nPlanes;
 
-
-
-  if (y < nRows) {
-
+  if(y < nRows) {
     //DEBUG -- still need these!
     unsigned int buffsize = 32 * nRows * 3 * nPanels;
     unsigned int idx = y * WIDTH * (nPlanes - 1) + x;
@@ -453,32 +410,19 @@ void RGBmatrixPanel::drawPixel(int16_t x, int16_t y, uint16_t c) {
     }
     //DEBUG
 
-    // Data for the upper half of the display is stored in the lower
+// Data for the upper half of the display is stored in the lower
     // bits of each byte.
     ptr = &matrixbuff[backindex][y * WIDTH * (nPlanes - 1) + x]; // Base addr
     // Plane 0 is a tricky case -- its data is spread about,
     // stored in least two bits not used by the other planes.
-
-    //old
-//    ptr[64] &= ~0B00000011;            // Plane 0 R,G mask out in one op
-//    if(r & 1) ptr[64] |=  0B00000001;  // Plane 0 R: 64 bytes ahead, bit 0
-//    if(g & 1) ptr[64] |=  0B00000010;  // Plane 0 G: 64 bytes ahead, bit 1
-//    if(b & 1) ptr[32] |=  0B00000001;  // Plane 0 B: 32 bytes ahead, bit 0
-//    else      ptr[32] &= ~0B00000001;  // Plane 0 B unset; mask out
-    //new
-    ptr=ptr+64*nPanels;
-    *ptr &= ~0B00000011;            // Plane 0 R,G mask out in one op
-    if(r & 1) *ptr |=  0B00000001;  // Plane 0 R: 64 bytes ahead, bit 0
-    if(g & 1) *ptr |=  0B00000010;  // Plane 0 G: 64 bytes ahead, bit 1
-    ptr=ptr-32*nPanels;
-    if(b & 1) *ptr |=  0B00000001;  // Plane 0 B: 32 bytes ahead, bit 0
-    else      *ptr &= ~0B00000001;  // Plane 0 B unset; mask out
-
-
+    ptr[(64*nPanels)] &= ~0B00000011;            // Plane 0 R,G mask out in one op
+    if(r & 1) ptr[(64*nPanels)] |=  0B00000001;  // Plane 0 R: 64 bytes ahead, bit 0
+    if(g & 1) ptr[(64*nPanels)] |=  0B00000010;  // Plane 0 G: 64 bytes ahead, bit 1
+    if(b & 1) ptr[(32*nPanels)] |=  0B00000001;  // Plane 0 B: 32 bytes ahead, bit 0
+    else      ptr[(32*nPanels)] &= ~0B00000001;  // Plane 0 B unset; mask out
     // The remaining three image planes are more normal-ish.
     // Data is stored in the high 6 bits so it can be quickly
     // copied to the DATAPORT register w/6 output lines.
-    ptr=ptr-32*nPanels;
     for(; bit < limit; bit <<= 1) {
       *ptr &= ~0B00011100;             // Mask out R,G,B in one op
       if(r & bit) *ptr |= 0B00000100;  // Plane N R: bit 2
@@ -487,9 +431,8 @@ void RGBmatrixPanel::drawPixel(int16_t x, int16_t y, uint16_t c) {
       ptr  += WIDTH;                  // Advance to next bit plane
     }
   }
-  else {
-
-    //DEBUG
+   else {
+      //DEBUG -- still need these!
     unsigned int buffsize = 32 * nRows * 3 * nPanels;
     unsigned int idx = (y - nRows) * WIDTH * (nPlanes - 1) + x;
     if ((idx < 0) || (idx > buffsize)) {
@@ -500,15 +443,9 @@ void RGBmatrixPanel::drawPixel(int16_t x, int16_t y, uint16_t c) {
     // Data for the lower half of the display is stored in the upper
     // bits, except for the plane 0 stuff, using 2 least bits.
     ptr = &matrixbuff[backindex][(y - nRows) * WIDTH * (nPlanes - 1) + x];
-
-
-
     *ptr &= ~0B00000011;               // Plane 0 G,B mask out in one op
-//    if(r & 1)  ptr[32] |=  0B00000010; // Plane 0 R: 32 bytes ahead, bit 1
-//    else       ptr[32] &= ~0B00000010; // Plane 0 R unset; mask out
-    if(r & 1)  ptr[32*nPanels] |=  0B00000010; // Plane 0 R: 32 bytes ahead, bit 1
-    else       ptr[32*nPanels] &= ~0B00000010; // Plane 0 R unset; mask out
-
+    if(r & 1)  ptr[(32*nPanels)] |=  0B00000010; // Plane 0 R: 32 bytes ahead, bit 1
+    else       ptr[(32*nPanels)] &= ~0B00000010; // Plane 0 R unset; mask out
     if(g & 1) *ptr     |=  0B00000001; // Plane 0 G: bit 0
     if(b & 1) *ptr     |=  0B00000010; // Plane 0 B: bit 0
     for(; bit < limit; bit <<= 1) {
@@ -520,6 +457,78 @@ void RGBmatrixPanel::drawPixel(int16_t x, int16_t y, uint16_t c) {
     }
   }
 }
+
+void RGBmatrixPanel::drawPixelNorm(int16_t x, int16_t y, uint16_t c) {
+  uint8_t r, g, b, bit, limit, *ptr;
+
+  if((x < 0) || (x >= _width) || (y < 0) || (y >= _height)) return;
+
+  switch(rotation) {
+   case 1:
+    swap(x, y);
+    x = WIDTH  - 1 - x;
+    break;
+   case 2:
+    x = WIDTH  - 1 - x;
+    y = HEIGHT - 1 - y;
+    break;
+   case 3:
+    swap(x, y);
+    y = HEIGHT - 1 - y;
+    break;
+  }
+
+  // Adafruit_GFX uses 16-bit color in 5/6/5 format, while matrix needs
+  // 4/4/4.  Pluck out relevant bits while separating into R,G,B:
+  r =  c >> 12;        // RRRRrggggggbbbbb
+  g = (c >>  7) & 0xF; // rrrrrGGGGggbbbbb
+  b = (c >>  1) & 0xF; // rrrrrggggggBBBBb
+
+  // Loop counter stuff
+  bit   = 2;
+  limit = 1 << nPlanes;
+
+  if(y < nRows) {
+    // Data for the upper half of the display is stored in the lower
+    // bits of each byte.
+    ptr = &matrixbuff[backindex][y * WIDTH * (nPlanes - 1) + x]; // Base addr
+    // Plane 0 is a tricky case -- its data is spread about,
+    // stored in least two bits not used by the other planes.
+    ptr[64] &= ~0B00000011;            // Plane 0 R,G mask out in one op
+    if(r & 1) ptr[64] |=  0B00000001;  // Plane 0 R: 64 bytes ahead, bit 0
+    if(g & 1) ptr[64] |=  0B00000010;  // Plane 0 G: 64 bytes ahead, bit 1
+    if(b & 1) ptr[32] |=  0B00000001;  // Plane 0 B: 32 bytes ahead, bit 0
+    else      ptr[32] &= ~0B00000001;  // Plane 0 B unset; mask out
+    // The remaining three image planes are more normal-ish.
+    // Data is stored in the high 6 bits so it can be quickly
+    // copied to the DATAPORT register w/6 output lines.
+    for(; bit < limit; bit <<= 1) {
+      *ptr &= ~0B00011100;             // Mask out R,G,B in one op
+      if(r & bit) *ptr |= 0B00000100;  // Plane N R: bit 2
+      if(g & bit) *ptr |= 0B00001000;  // Plane N G: bit 3
+      if(b & bit) *ptr |= 0B00010000;  // Plane N B: bit 4
+      ptr  += WIDTH;                  // Advance to next bit plane
+    }
+  } else {
+    // Data for the lower half of the display is stored in the upper
+    // bits, except for the plane 0 stuff, using 2 least bits.
+    ptr = &matrixbuff[backindex][(y - nRows) * WIDTH * (nPlanes - 1) + x];
+    *ptr &= ~0B00000011;               // Plane 0 G,B mask out in one op
+    if(r & 1)  ptr[32] |=  0B00000010; // Plane 0 R: 32 bytes ahead, bit 1
+    else       ptr[32] &= ~0B00000010; // Plane 0 R unset; mask out
+    if(g & 1) *ptr     |=  0B00000001; // Plane 0 G: bit 0
+    if(b & 1) *ptr     |=  0B00000010; // Plane 0 B: bit 0
+    for(; bit < limit; bit <<= 1) {
+      *ptr &= ~0B11100000;             // Mask out R,G,B in one op
+      if(r & bit) *ptr |= 0B00100000;  // Plane N R: bit 5
+      if(g & bit) *ptr |= 0B01000000;  // Plane N G: bit 6
+      if(b & bit) *ptr |= 0B10000000;  // Plane N B: bit 7
+      ptr  += WIDTH;                  // Advance to next bit plane
+    }
+  }
+}
+
+
 
 void RGBmatrixPanel::fillScreen(uint16_t c) {
   if((c == 0x0000) || (c == 0xffff)) {
@@ -566,21 +575,40 @@ void RGBmatrixPanel::dumpMatrix(void) {
   //int i, buffsize = 32 * nRows * 3;
   int i, buffsize = 32 * nRows * 3 * nPanels;
 
-  Serial.print("\n\n"
-    "#include <avr/pgmspace.h>\n\n"
-    "static const uint8_t PROGMEM img[] = {\n  ");
+    Serial.println("Matrix:");
+    for(i=0;i<buffsize;i++) {
+        if (i % 32 == 0) {
+           Serial.println("");
+        }
 
-  for(i=0; i<buffsize; i++) {
-    Serial.print("0x");
-    if(matrixbuff[backindex][i] < 0x10) Serial.print('0');
-    Serial.print(matrixbuff[backindex][i],HEX);
-    if(i < (buffsize - 1)) {
-      if((i & 7) == 7) Serial.print(",\n  ");
-      else             Serial.print(',');
+        Serial.print(matrixbuff[backindex][i],HEX);
+        Serial.print(",");
+
     }
-  }
-  Serial.println("\n};");
+    Serial.println("");
+    Serial.println("");
+
+//  Serial.print("\n\n"
+//    "#include <avr/pgmspace.h>\n\n"
+//    "static const uint8_t PROGMEM img[] = {\n  ");
+//
+//  for(i=0; i<buffsize; i++) {
+//    Serial.print("0x");
+//    if(matrixbuff[backindex][i] < 0x10)
+//        Serial.print('0');
+//
+//    Serial.print(matrixbuff[backindex][i],HEX);
+//
+//    if(i < (buffsize - 1)) {
+//      if((i & 7) == 7)
+//        Serial.print(",\n  ");
+//      else
+//        Serial.print(',');
+//    }
+//  }
+//  Serial.println("\n};");
 }
+
 
 // -------------------- Interrupt handler stuff --------------------
 #if defined(SPARK)
