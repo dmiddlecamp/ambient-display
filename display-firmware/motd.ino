@@ -4,8 +4,8 @@
 #include "RGBmatrixPanel.h" // Hardware-specific library
 #include "math.h"
 
-#include "spark_disable_wlan.h"
-#include "spark_disable_cloud.h"
+//#include "spark_disable_wlan.h"
+//#include "spark_disable_cloud.h"
 
 
 
@@ -30,7 +30,10 @@
 // Last parameter = 'true' enables double-buffering, for flicker-free,
 // buttery smooth animation.  Note that NOTHING WILL SHOW ON THE DISPLAY
 // until the first call to swapBuffers().  This is normal.
-RGBmatrixPanel matrix(A, B, C, CLK, LAT, OE, true);
+//RGBmatrixPanel matrix(A, B, C, CLK, LAT, OE, true);
+
+// 32x32
+RGBmatrixPanel matrix(A, B, C, A5, CLK, LAT, OE, true);
 
 
 #define MILLISECONDS_BETWEEN_MESSAGES 5000
@@ -51,7 +54,7 @@ uint8_t pixelDelay = SECONDS_PER_CHARACTER / PIXELS_PER_CHARACTER;
 
 #define NUM_MESSAGES 4
 const char *messages[NUM_MESSAGES] = {
-    "Happy Birthday Lindsey",
+    "Hi Dave!",
     NULL,
     NULL,
     NULL
@@ -87,9 +90,14 @@ void motdHandler(const char *event, const char *data)
         }
 
     }
-    else if (strncmp(event, "Temperature", ) == 0) {
-        messages[1] = (new String(String("It's ") + String(data) + String(" outside")))->c_str();
+    else if (strncmp(event, "Input", 5) == 0) {
+        messages[0] = data;
+        msgIndex = 0;
+        resetMessage();
     }
+//    else if (strncmp(event, "Temperature", ) == 0) {
+//        messages[1] = (new String(String("It's ") + String(data) + String(" outside")))->c_str();
+//    }
 }
 
 void setup() {
@@ -104,8 +112,12 @@ void setup() {
 
     resetMessage();
 
-    WiFi.on();
-    Spark.connect();
+        Spark.subscribe("rgb_motd", motdHandler, MY_DEVICES);
+        Spark.subscribe("rgb_bus_times", motdHandler, MY_DEVICES);
+        Spark.subscribe("Input", motdHandler, MY_DEVICES);
+
+//    WiFi.on();
+//    Spark.connect();
 }
 
 uint8_t resubscribe = 1;
@@ -113,13 +125,15 @@ uint8_t resubscribe = 1;
 void loop() {
     //WiFi_Status_TypeDef status = WiFi.status();
 
+/*
     if (resubscribe && (WiFi.status() == WIFI_ON)) {
-
         Spark.subscribe("rgb_motd", motdHandler, MY_DEVICES);
         Spark.subscribe("rgb_bus_times", motdHandler, MY_DEVICES);
         Spark.subscribe("Temperature", motdHandler, MY_DEVICES);
+
         resubscribe = 0;
     }
+*/
 
     updateMarqueeText();
 }
@@ -157,7 +171,7 @@ void resetMessage() {
     matrix.setTextSize(fontSizes[msgIndex]);
     matrix.setTextColor(colors[msgIndex]);
 
-    delay(MILLISECONDS_BETWEEN_MESSAGES);
+    
 }
 
 void updateMarqueeText() {
@@ -167,6 +181,7 @@ void updateMarqueeText() {
     {
         Serial.println("updateMarqueeText msgIndex was below zero, or >= NUM_MESSAGES");
         resetMessage();
+        delay(MILLISECONDS_BETWEEN_MESSAGES);
     }
 
     matrix.fillScreen(0);
@@ -177,6 +192,7 @@ void updateMarqueeText() {
         Serial.println("xpos "+String(xpos)+" was beyond textMin");
         msgIndex++;
         resetMessage();
+        delay(MILLISECONDS_BETWEEN_MESSAGES);
     }
 
     // Update display

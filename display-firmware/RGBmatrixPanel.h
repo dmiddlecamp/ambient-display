@@ -14,7 +14,8 @@
 #include "Adafruit_GFX.h"
 #endif
 
-
+#ifndef _RGB_MATRIX
+#define _RGB_MATRIX
 
 
 class RGBmatrixPanel : public Adafruit_GFX {
@@ -73,3 +74,5 @@ class RGBmatrixPanel : public Adafruit_GFX {
   volatile uint8_t *buffptr;
 };
 
+
+#endif
